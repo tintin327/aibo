@@ -20,10 +20,10 @@ from sklearn.model_selection import train_test_split
 start_time = time.time()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = 32
+BATCH_SIZE = 8
 EPOCHS = 25
-LEARNING_RATE = 3e-5 #[5e-5, 3e-5, 2e-5]
-unfreeze_layers = ['layer.8','layer.9','layer.10','layer.11','bert.pooler']
+LEARNING_RATE = 2e-5 #[5e-5, 3e-5, 2e-5]
+unfreeze_layers = ['layer.1','layer.2','layer.3','layer.4','layer.5','layer.6','layer.7','layer.8','layer.9','layer.10','layer.11','bert.pooler']
 bert_output = 'pooler_output' # or 'last_hidden_state'
 
 
@@ -48,12 +48,12 @@ val_fscore_history = []
 model = (m.Classifier()).to(device)
 
 
-for n, p in model.named_parameters():
-    if 'bert' in n:
-        p.requires_grad = False
-    for layer in unfreeze_layers:
-        if layer in n:
-            p.requires_grad = True
+# for n, p in model.named_parameters():
+#     if 'bert' in n:
+#         p.requires_grad = False
+#     for layer in unfreeze_layers:
+#         if layer in n:
+#             p.requires_grad = True
 
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, correct_bias=True) # optimizer = Adafactor(model.parameters())
 loss_function = nn.CrossEntropyLoss().to(device)

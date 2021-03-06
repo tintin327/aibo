@@ -72,9 +72,9 @@ def data_preprocessing():
     ooo = 0
     for negative_article in negative_data:
         if(negative_article!=None):
-            articles.append([negative_article,0])
+            #articles.append([negative_article,0])
             ooo = ooo+1
-    print(ooo)
+    
             
 
     return articles
