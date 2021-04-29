@@ -33,6 +33,7 @@ class xlmr_Classifier(nn.Module):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         output = (torch.tensor([])).to(device)
         _ , output = self.xlmr(input_ids=input_ids,attention_mask=attention_mask)
+        
         return self.out(output)
     
 def train_epoch(model,data_loader,loss_function,optimizer,device,bert_output,n_examples):
@@ -42,7 +43,6 @@ def train_epoch(model,data_loader,loss_function,optimizer,device,bert_output,n_e
     cfs_matrix = np.array([[0,0],[0,0]])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for data in data_loader:
-#         input_ids, _ , attention_mask, targets = data
         input_ids, attention_mask, targets = data
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
@@ -66,6 +66,10 @@ def train_epoch(model,data_loader,loss_function,optimizer,device,bert_output,n_e
     return correct_predictions.double() / n_examples , np.mean(losses)  , cfs_matrix
 
 def eval_model(model, data_loader, loss_function, device,bert_output, n_examples):
+    tp = []
+    fp = []
+    tn = []
+    fn = []
     model = model.eval()
     losses = []
     correct_predictions = 0
@@ -73,7 +77,7 @@ def eval_model(model, data_loader, loss_function, device,bert_output, n_examples
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with torch.no_grad():
         for data in data_loader:
-            input_ids, attention_mask, targets = data
+            input_ids, attention_mask, targets, url = data
             input_ids = input_ids.to(device)
             attention_mask = attention_mask.to(device)
             targets = targets.to(device)
@@ -81,6 +85,16 @@ def eval_model(model, data_loader, loss_function, device,bert_output, n_examples
             _, preds = torch.max(outputs, dim=1)
             loss = loss_function(outputs, targets)
             correct_predictions += torch.sum(preds == targets)
+            for i in range(len(preds)):
+                if preds[i]+targets[i]==2:
+                    tp.append(url[i])
+                elif preds[i]+targets[i]==0:
+                    tn.append(url[i])
+                elif preds[i]==1:
+                    fp.append(url[i])
+                elif targets[i]==1:
+                    fn.append(url[i])
+                    
             matrix = confusion_matrix(y_true=targets.cpu(), y_pred=preds.cpu())
             if(matrix.shape==(1,1)):
                 if(preds[0]==1):
@@ -89,6 +103,36 @@ def eval_model(model, data_loader, loss_function, device,bert_output, n_examples
                     matrix = np.array([[matrix[0][0],0],[0,0]])
             cfs_matrix = cfs_matrix + matrix
             losses.append(loss.item())
+            
 
             
-    return correct_predictions.double() / n_examples, np.mean(losses) , cfs_matrix
+    return correct_predictions.double() / n_examples, np.mean(losses) , cfs_matrix , [tp,tn,fp,fn]
+
+
+# def eval_model(model, data_loader, loss_function, device,bert_output, n_examples):
+#     model = model.eval()
+#     losses = []
+#     correct_predictions = 0
+#     cfs_matrix = np.array([[0,0],[0,0]])
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     with torch.no_grad():
+#         for data in data_loader:
+#             input_ids, attention_mask, targets = data
+#             input_ids = input_ids.to(device)
+#             attention_mask = attention_mask.to(device)
+#             targets = targets.to(device)
+#             outputs = model(input_ids=input_ids,attention_mask=attention_mask,bert_output = bert_output)
+#             _, preds = torch.max(outputs, dim=1)
+#             loss = loss_function(outputs, targets)
+#             correct_predictions += torch.sum(preds == targets)
+#             matrix = confusion_matrix(y_true=targets.cpu(), y_pred=preds.cpu())
+#             if(matrix.shape==(1,1)):
+#                 if(preds[0]==1):
+#                     matrix = np.array([[0,0],[0,matrix[0][0]]])
+#                 else:
+#                     matrix = np.array([[matrix[0][0],0],[0,0]])
+#             cfs_matrix = cfs_matrix + matrix
+#             losses.append(loss.item())
+
+            
+#     return correct_predictions.double() / n_examples, np.mean(losses) , cfs_matrix

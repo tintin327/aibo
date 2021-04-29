@@ -22,7 +22,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model_name = "xlmr" #else bert
 BATCH_SIZE = 6
-EPOCHS = 35
+EPOCHS = 20
 LEARNING_RATE = 2e-6 #[5e-5, 3e-5, 2e-5]
 output_type = 'pooler_output' # or 'last_hidden_state'
 
@@ -80,11 +80,11 @@ elif model_name == "bert":
     tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
 
 train_set = data.AiboDataset("train", tokenizer=tokenizer,articles=articles_train)
-val_set = data.AiboDataset("train", tokenizer=tokenizer,articles=articles_val)
-test_set = data.AiboDataset("train", tokenizer=tokenizer,articles=articles_test)
-train_dataloader = DataLoader(train_set, batch_size=BATCH_SIZE, collate_fn=data.create_batch, shuffle = True)
-val_dataloader = DataLoader(val_set, batch_size=BATCH_SIZE, collate_fn=data.create_batch,shuffle = True)
-test_dataloader = DataLoader(test_set, batch_size=BATCH_SIZE, collate_fn=data.create_batch,shuffle = True)
+val_set = data.AiboDataset("val", tokenizer=tokenizer,articles=articles_val)
+test_set = data.AiboDataset("val", tokenizer=tokenizer,articles=articles_test)
+train_dataloader = DataLoader(train_set, batch_size=BATCH_SIZE, collate_fn=data.train_create_batch, shuffle = True)
+val_dataloader = DataLoader(val_set, batch_size=BATCH_SIZE, collate_fn=data.val_create_batch,shuffle = True)
+test_dataloader = DataLoader(test_set, batch_size=BATCH_SIZE, collate_fn=data.val_create_batch,shuffle = True)
 
 
 # writer.flush()
@@ -103,7 +103,7 @@ for epoch in range(EPOCHS):
         len(articles_train)
     )
     
-    val_acc, val_loss, val_cfs_matrix = m.eval_model(
+    val_acc, val_loss, val_cfs_matrix, _ = m.eval_model(
         model,
         val_dataloader,
         loss_function,
@@ -111,6 +111,7 @@ for epoch in range(EPOCHS):
         output_type,
         len(articles_val)
     )
+    
     train_recall, train_precision, train_F1_score = result.classification_report(train_cfs_matrix)
     val_recall, val_precision, val_F1_score = result.classification_report(val_cfs_matrix)
     print("#Train")
@@ -132,7 +133,6 @@ for epoch in range(EPOCHS):
     val_acc_history.append(val_acc.item())
     train_loss_history.append(np.asscalar(train_loss))
     val_loss_history.append(np.asscalar(val_loss))
-
     if val_acc.item() > best_accuracy and val_acc.item()> 0.85:
         torch.save(model.state_dict(), 'best_model_state.bin')
         best_accuracy = val_acc.item()
@@ -142,7 +142,7 @@ for epoch in range(EPOCHS):
 model.load_state_dict(torch.load('best_model_state.bin'))
 model = model.to(device)
 
-test_acc, _ , test_cfs_matrix = m.eval_model(
+test_acc, _ , test_cfs_matrix, predicted_of_url = m.eval_model(
     model,
     test_dataloader,
     loss_function,
@@ -154,15 +154,17 @@ test_acc, _ , test_cfs_matrix = m.eval_model(
 test_recall, test_precision, test_F1_score = result.classification_report(test_cfs_matrix)
 
 test_msg = f"""#Test
-accuracy : {round(float(test_acc),7)}
-Recall : {round(test_recall, 5)}  Precision : {round(test_precision, 5)}  F1_score : {round(test_F1_score, 5)}
-True positive : {test_cfs_matrix[1][1]}
-False positive : {test_cfs_matrix[0][1]}
-True negative : {test_cfs_matrix[0][0]}
+accuracy : {round(float(test_acc),7)}         
+Recall : {round(test_recall, 5)}  Precision : {round(test_precision, 5)}  F1_score : {round(test_F1_score, 5)}       
+True positive : {test_cfs_matrix[1][1]}        
+False positive : {test_cfs_matrix[0][1]}        
+True negative : {test_cfs_matrix[0][0]}         
 False negative : {test_cfs_matrix[1][0]}"""
-
 print(test_msg)
 writer.add_text('RESULT', test_msg)
+
+result.record_predicted_of_url(writer,predicted_of_url)
+result.save_predicted_file(predicted_of_url)
 
 writer.close()
 print("--- %s seconds ---" % (time.time() - start_time))

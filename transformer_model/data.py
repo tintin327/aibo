@@ -18,7 +18,10 @@ class AiboDataset(Dataset):
             
         label_tensor = torch.tensor(label)
         encoded_input = self.tokenizer(article,return_tensors="pt",max_length=512,truncation=True)
-        return (encoded_input['input_ids'], encoded_input["attention_mask"], label_tensor,url) 
+        if self.mode == "train":
+            return (encoded_input['input_ids'], encoded_input["attention_mask"], label_tensor) 
+        else :
+            return (encoded_input['input_ids'], encoded_input["attention_mask"], label_tensor,url) 
 
     
     def __len__(self):
@@ -44,10 +47,12 @@ def val_create_batch(samples):
     tokens_tensors = [s[0][0] for s in samples]
     masks_tensors = [s[1][0] for s in samples]
     label_ids = torch.stack([s[2] for s in samples])
+    url = [s[3] for s in samples]
     tokens_tensors = pad_sequence(tokens_tensors,batch_first=True)
     masks_tensors = pad_sequence(masks_tensors,batch_first=True)
-    return tokens_tensors, masks_tensors, label_ids
-
+    return tokens_tensors, masks_tensors, label_ids, url
+                
+                
 def data_preprocessing():
     conn = sqlite3.connect('aibo.db')
     cursor = conn.execute("SELECT * FROM collect_log")
@@ -55,9 +60,7 @@ def data_preprocessing():
     cursor = conn.execute("SELECT * FROM parsed_news")
     parsed_news = cursor.fetchall() 
     articles = []
-    
-    cursor = conn.execute("SELECT * FROM parsed_news")
-    DATA = cursor.fetchall()
+
 
     for collect in collect_log:
         for parsed in parsed_news:
@@ -74,10 +77,6 @@ def data_preprocessing():
                     article_text = article_text.strip()
                     if(article_len>50):
                         articles.append([article_text,label,url])
-                        if(label==0):
-                            neg = neg +1
-                        if(label==1):
-                            pos = pos +1
                             
     # conn = sqlite3.connect('negative_data.db')
     # cursor = conn.execute("SELECT ARTICLE FROM NEWS")
@@ -111,20 +110,19 @@ def print_labels_number(writer,articles_train,articles_val,articles_test):
             pos_test = pos_test+1
         if i[1]==0:
             neg_test = neg_test+1
-     
-    msg = f"""
-number of articles: {len(articles_train)+len(articles_val)+len(articles_test)}
-number of train: {len(articles_train)}
-number of train_POS: {(pos_train)}
-number of train_NEG: {(neg_train)}
-number of val: {len(articles_val)}
-number of val_POS: {(pos_val)}
-number of val_NEG: {(neg_val)}   
-number of test: {len(articles_test)}
-number of test_POS: {(pos_test)}
-number of test_NEG: {(neg_test)}\n"""
+            
+    message = f'''number of articles: {len(articles_train)+len(articles_val)+len(articles_test)}       
+number of train: {len(articles_train)}     
+number of train_POS: {(pos_train)}       
+number of train_NEG: {(neg_train)}         
+number of val: {len(articles_val)}       
+number of val_POS: {(pos_val)}        
+number of val_NEG: {(neg_val)}        
+number of test: {len(articles_test)}       
+number of test_POS: {(pos_test)}        
+number of test_NEG: {(neg_test)}\n'''
     
-    print(msg)
-    writer.add_text('DATA', msg)
+    print(message)
+    writer.add_text('DATA', message)
 
 
