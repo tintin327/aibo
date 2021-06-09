@@ -8,11 +8,11 @@
 - Name : "xlm-roberta-large"
 - Unfreezed layer : layer.18 - layer.24,   xlmr.pooler_output
 
-# Model
+## Model
 
 ![](IMG/model_img.png)
 
-# Data
+## Data
  - Input : Artical text
  - Input size : tokenizer(max_length=512)
 
@@ -20,7 +20,7 @@
 |:-:|:-:|:-:|
 |544|569|1113|
 
-# Training
+## Training
  * Parameter
     * BATCH_SIZE : 6
     * EPOCHS : 20
@@ -33,7 +33,7 @@
 |**Validation**|107|116|223|
 |**Test**|114|109|223|
 
-# Result
+## Result
 * Accuracy :  0.896861
 
 |-|True Positive|True Negative|False Positive|False Negative|
