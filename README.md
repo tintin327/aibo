@@ -44,3 +44,4 @@ To get detailed process in every epoch, run tensorboard in the `transformer` fil
  ```
  $ tensorboard --logdir tensorboard --bind_all
  ```
+The path for the trained model is `/home/tintin/aibo/transformer_model/best_model_state.bin`
