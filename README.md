@@ -10,7 +10,7 @@
 
 # Model
 
-![image](https://github.com/tintin327/aibo/blob/master/IMG/model_img.pdf)
+![](IMG/model_img.PNG)
 
 # Data
  - Input : Artical text
