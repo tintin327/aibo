@@ -10,7 +10,7 @@
 
 # Model
 
-![](IMG/model_img.PNG)
+![](IMG/model_img.png)
 
 # Data
  - Input : Artical text
